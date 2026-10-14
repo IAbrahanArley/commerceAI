@@ -1,7 +1,7 @@
 # Commerce AI — Roadmap de Desenvolvimento
 
 **Versão:** 0.1.0\
-**Status:** Planejamento\
+**Status:** Fase 1 concluída; Fase 2 em planejamento\
 **Metodologia:** Desenvolvimento incremental e aprendizado prático\
 **Disponibilidade estimada:** 3 horas por dia, 6 dias por semana
 
@@ -28,7 +28,7 @@ Cada fase deverá resultar em uma funcionalidade demonstrável.
 
 ### Fase 1 — Fundação e integração com LLM
 
-**Status:** Em andamento; validação real do Gemini pendente\
+**Status:** Concluída\
 **Estimativa:** Semana 1
 
 **Objetivo:** criar o backend inicial e realizar a primeira comunicação com o Gemini.
@@ -47,7 +47,7 @@ Cada fase deverá resultar em uma funcionalidade demonstrável.
 - [x] Criar projeto Java 21 com Spring Boot.
 - [x] Configurar Maven e dependências.
 - [x] Configurar Spring AI.
-- [ ] Integrar Google Gemini.
+- [x] Integrar Google Gemini.
 - [x] Criar ChatController.
 - [x] Criar ChatService.
 - [x] Criar ChatRequest e ChatResponse.
@@ -69,6 +69,10 @@ Cada fase deverá resultar em uma funcionalidade demonstrável.
 - Testes automatizados passam.
 
 **Entrega:** API de chat funcional.
+
+**Validação manual:** em 14/10/2026, o desenvolvedor confirmou resposta real do
+Gemini 3.5 Flash-Lite e testes concluídos pelo Swagger e Postman.
+Logs temporários de diagnóstico removidos após a validação.
 
 ---
 
@@ -330,11 +334,12 @@ O Codex não deverá marcar tarefas como concluídas sem evidência de implement
 
 ## 6. Próxima atividade
 
-**Fase atual:** Fase 1 — Fundação e integração com LLM.
+**Fase atual:** Fase 2 — Conversas e interface web (ainda não implementada).
 
-**Próximo passo:** validar uma chamada real com uma chave Gemini configurada localmente.
+**Próximo passo:** apresentar o plano da memória conversacional temporária,
+com limites, expiração e isolamento entre sessões, para aprovação antes de implementar.
 
-Verificação: `clean verify` com Java 21, 28 testes passando e JAR executável gerado.
-A tarefa de integração com Google Gemini permanece pendente até comprovar uma resposta
-real do provedor; testes simulados e inicialização do modelo não substituem essa validação.
+Verificação: suíte automatizada com Java 21, 35 testes passando.
+Documentação OpenAPI e Swagger UI implementados com contrato em interface `ChatApi`.
+Integração real com Google Gemini confirmada pelo desenvolvedor via Swagger e Postman em 14/10/2026.
 

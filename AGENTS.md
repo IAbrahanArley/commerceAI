@@ -22,3 +22,12 @@ Commerce AI e uma plataforma de assistente comercial inteligente para e-commerce
 - Apos implementar funcionalidades, execute os testes disponiveis e informe os resultados.
 - Mantenha os arquivos de documentacao atualizados.
 
+## Padrao de controllers e documentacao da API
+
+- Para endpoints REST, crie uma interface com sufixo `Api` no pacote de controllers da funcionalidade.
+- Centralize nessa interface as assinaturas, os mapeamentos HTTP, `@Valid`, `@RequestBody` e a documentacao OpenAPI (`@Tag`, `@Operation`, `@ApiResponses`).
+- A classe com sufixo `Controller` deve implementar a interface, usar `@RestController`, receber servicos por construtor e delegar o processamento, sem duplicar as anotacoes do contrato.
+- Mantenha as restricoes de validacao nos DTOs e documente exemplos, limites e respostas de erro reais.
+- Utilize springdoc-openapi para gerar a especificacao e o Swagger UI. Teste o contrato HTTP e a especificacao gerada apos refatoracoes.
+- Referencia escolhida pelo usuario: https://github.com/IAbrahanArley/project-rh/blob/main/backend/src/main/java/br/com/abrahanarley/controllers/CandidateResumeApi.java
+

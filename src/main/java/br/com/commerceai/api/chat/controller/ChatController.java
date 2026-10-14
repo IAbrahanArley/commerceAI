@@ -3,15 +3,10 @@ package br.com.commerceai.api.chat.controller;
 import br.com.commerceai.api.chat.dto.ChatRequest;
 import br.com.commerceai.api.chat.dto.ChatResponse;
 import br.com.commerceai.api.chat.service.ChatService;
-import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/chat")
-public class ChatController {
+public class ChatController implements ChatApi {
 
     private final ChatService chatService;
 
@@ -19,8 +14,8 @@ public class ChatController {
         this.chatService = chatService;
     }
 
-    @PostMapping
-    public ChatResponse chat(@Valid @RequestBody ChatRequest request) {
+    @Override
+    public ChatResponse chat(ChatRequest request) {
         return chatService.chat(request);
     }
 }

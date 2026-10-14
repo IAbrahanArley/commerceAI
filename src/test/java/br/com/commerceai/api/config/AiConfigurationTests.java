@@ -15,8 +15,8 @@ class AiConfigurationTests {
 
     @Test
     void configuresRealGeminiModelWithoutMakingExternalCalls() {
-        assertThat(model.getOptions().getModel()).isEqualTo("gemini-2.5-flash");
-        assertThat(model.getOptions().getTemperature()).isEqualTo(0.2);
+        assertThat(model.getOptions().getModel()).isEqualTo("gemini-3.5-flash-lite");
+        assertThat(model.getOptions().getTemperature()).isEqualTo(0.7);
         assertThat(model.getOptions().getMaxOutputTokens()).isEqualTo(1024);
     }
 }

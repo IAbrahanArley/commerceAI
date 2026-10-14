@@ -299,7 +299,8 @@ Essas possibilidades não fazem parte do escopo inicial e dependerão de valida�
 
 ---
 
-**Estado atual:** endpoint inicial de chat implementado com validação, tratamento de erros e testes automatizados.
+**Estado atual:** Fase 1 concluída, com endpoint de chat, validação, tratamento de erros,
+testes automatizados e chamada real ao Gemini confirmada pelo desenvolvedor via Swagger e Postman.
 
-**Próximo marco:** validar a resposta real do endpoint com credenciais do Google Gemini configuradas localmente.
+**Próximo marco:** planejar e implementar memória conversacional temporária, após aprovação do plano.
 

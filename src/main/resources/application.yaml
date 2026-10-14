@@ -8,9 +8,12 @@ spring:
       genai:
         api-key: ${GEMINI_API_KEY}
         chat:
-          model: ${GEMINI_MODEL:gemini-2.5-flash}
-          temperature: 0.2
+          model: ${GEMINI_MODEL:gemini-3.5-flash-lite}
           max-output-tokens: 1024
+
+commerce:
+  ai:
+    request-timeout-ms: ${GEMINI_TIMEOUT_MS:60000}
 
 server:
   error:

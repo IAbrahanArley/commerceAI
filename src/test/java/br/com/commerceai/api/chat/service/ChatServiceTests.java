@@ -2,7 +2,7 @@ package br.com.commerceai.api.chat.service;
 
 import br.com.commerceai.api.chat.dto.ChatRequest;
 import com.google.genai.errors.ApiException;
-import java.net.SocketTimeoutException;
+import java.io.InterruptedIOException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,7 +63,7 @@ class ChatServiceTests {
 
     @Test
     void translatesNetworkTimeout() {
-        when(model.call(any(Prompt.class))).thenThrow(new RuntimeException(new SocketTimeoutException()));
+        when(model.call(any(Prompt.class))).thenThrow(new RuntimeException(new InterruptedIOException("timeout")));
         assertThatThrownBy(() -> service.chat(new ChatRequest("s", "Oi")))
                 .isInstanceOfSatisfying(ChatProviderException.class,
                         exception -> assertThat(exception.status()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));

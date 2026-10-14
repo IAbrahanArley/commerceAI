@@ -35,7 +35,8 @@ Não utilizaremos microsserviços, mensageria ou infraestrutura distribuída sem
 | Spring Web | API REST |
 | Spring Validation | Validação |
 | Spring AI 2.0.1 | Integração com LLM |
-| Google Gemini | Provedor inicial de IA |
+| springdoc-openapi 3.1.1 | Especificação OpenAPI e Swagger UI |
+| Google Gemini 3.5 Flash-Lite | Modelo inicial de IA |
 | Spring Boot Actuator | Health checks e métricas |
 | Maven 3.10.0 (Wrapper) | Build e dependências |
 | JUnit Jupiter 6.0.3 | Testes automatizados |
@@ -68,6 +69,7 @@ src/main/java/br/com/commerceai/api/
 ├── CommerceAiApiApplication.java
 ├── chat/
 │   ├── controller/
+│   │   ├── ChatApi.java
 │   │   └── ChatController.java
 │   ├── service/
 │   │   └── ChatService.java
@@ -75,14 +77,33 @@ src/main/java/br/com/commerceai/api/
 │       ├── ChatRequest.java
 │       └── ChatResponse.java
 ├── config/
-│   └── AiConfig.java
+│   ├── AiConfig.java
+│   └── OpenApiConfig.java
 └── shared/
     └── exception/
         └── GlobalExceptionHandler.java
 ```
 
-A classe AiConfig configura o cliente Google GenAI com timeout de 30 segundos e uma tentativa.
+A classe AiConfig configura o cliente Google GenAI com timeout padrão de 60 segundos e uma tentativa.
+O limite é configurável por `GEMINI_TIMEOUT_MS` (milissegundos, valor positivo).
 O Spring AI também utiliza uma tentativa. Não há repetição automática nesta etapa.
+
+### Contrato e implementação dos controllers
+
+Por preferência do usuário, endpoints REST seguem o modelo de interface `*Api`
+e implementação `*Controller`. A interface concentra assinaturas, mapeamentos HTTP,
+`@Valid`, `@RequestBody` e anotações OpenAPI, como `@Tag`, `@Operation` e `@ApiResponses`.
+O controller usa `@RestController`, implementa a interface e delega ao serviço,
+sem repetir as anotações do contrato. As restrições dos campos ficam nos DTOs.
+
+Referência: [CandidateResumeApi](https://github.com/IAbrahanArley/project-rh/blob/main/backend/src/main/java/br/com/abrahanarley/controllers/CandidateResumeApi.java).
+O padrão também está registrado em `AGENTS.md`.
+
+O starter `springdoc-openapi-starter-webmvc-ui` foi adicionado para gerar a especificação
+e servir a interface interativa, sem escrever um contrato separado manualmente.
+`OpenApiConfig` define os metadados gerais da API. A documentação é acessível por
+`/swagger-ui.html`, `/v3/api-docs` e `/v3/api-docs.yaml`.
+O contrato inclui sucesso, validação e erros reais do provedor; não declara autenticação ainda inexistente.
 
 ### Módulos futuros
 
@@ -200,6 +221,18 @@ Os códigos deverão refletir a causa efetiva da falha, sem expor credenciais ou
 ## 6. Integração com LLM
 
 O provedor inicial será Google Gemini, utilizando Spring AI.
+
+O modelo padrão é `gemini-3.5-flash-lite`, configurável por `GEMINI_MODEL`.
+O `gemini-2.5-flash` foi rejeitado para novos usuários; o `gemini-3.8-flash`
+retornou alta demanda durante os testes reais. Flash-Lite foi escolhido pelo foco
+em baixa latência e pela modalidade gratuita publicada pelo provedor, sujeita às cotas.
+Não há fallback automático entre modelos.
+A integração atual usa `generateContent`, ainda documentado para o modelo.
+Removemos a temperatura personalizada do YAML e mantemos o limite de saída de 1024 tokens.
+O Spring AI 2.0.1 fixa valores padrão de amostragem nas opções (temperatura 0.7),
+mesmo quando são omitidos na configuração. Ao selecionar Gemini 3.8 Flash, ele ignora esses parâmetros
+atualmente. Será necessário revisar a biblioteca se o provedor passar a rejeitá-los.
+A recomendação de Interactions API será avaliada separadamente quando necessária.
 
 ### Regras
 
@@ -487,14 +520,17 @@ Não introduzir:
 
 **Implementado:** endpoint `POST /api/v1/chat`, DTOs imutáveis, validação, serviço
 com `ChatClient`, prompt de sistema, credenciais por ambiente, timeout,
-tratamento de erros e testes automatizados sem chamadas externas.
+tratamento de erros, contrato `ChatApi`, Swagger UI e testes automatizados sem chamadas externas.
 
 **Planejado:** memória conversacional, catálogo, ferramentas, RAG e demais módulos.
 
-**Validação:** build limpo com Java 21 e 28 testes passando, sem falhas ou erros.
+**Validação:** suíte automatizada com Java 21 e 35 testes passando, sem falhas ou erros,
+incluindo geração da especificação OpenAPI e acesso aos recursos do Swagger UI.
 
-**Validação externa pendente:** confirmar autenticação e resposta real do Gemini
-com uma chave válida. A inicialização do modelo é testada sem enviar mensagens.
+**Validação externa:** o desenvolvedor confirmou autenticação, resposta real do
+Gemini 3.5 Flash-Lite e testes pelo Swagger e Postman em 14/10/2026.
+Os testes automatizados continuam sem enviar mensagens ao provedor.
+Logs temporários da chave e stack traces diretos foram removidos após o diagnóstico.
 
 Execução e conceitos iniciais estão documentados no `README.md`.
 
