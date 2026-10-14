@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: commerce-ai-api
+  ai:
+    retry:
+      max-attempts: 1
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY}
+        chat:
+          model: ${GEMINI_MODEL:gemini-2.5-flash}
+          temperature: 0.2
+          max-output-tokens: 1024
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
