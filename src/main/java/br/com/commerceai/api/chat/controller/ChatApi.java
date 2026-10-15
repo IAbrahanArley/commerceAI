@@ -27,7 +27,12 @@ public interface ChatApi {
                     Gera uma resposta com o Gemini. sessionId e obrigatorio, aceita letras ASCII,
                     numeros, _ e -, e tem limite de 64 caracteres. message e obrigatoria,
                     nao pode conter apenas espacos e tem limite de 4000 caracteres.
-                    sessionId serve apenas para correlacao; nao ha memoria conversacional.
+                    sessionId identifica a memoria temporaria da conversa nesta instancia.
+                    Por padrao, guardamos ate 20 mensagens por sessao, com expiracao apos 30 minutos
+                    de inatividade e limite global de 1000 sessoes. Sessoes ociosas mais antigas podem
+                    ser removidas ao atingir o limite. Reiniciar a aplicacao apaga a memoria.
+                    Falhas do provedor nao sao armazenadas. Use IDs distintos e nao previsiveis;
+                    sessionId nao autentica o cliente e o endpoint e destinado a desenvolvimento local.
                     Nesta versao o assistente nao consulta catalogo, precos ou estoque.
                     A chamada ao modelo externo pode consumir a cota configurada no backend.
                     """,
@@ -63,7 +68,8 @@ public interface ChatApi {
             @ApiResponse(responseCode = "502", description = "Falha do provedor ou resposta sem conteudo valido.",
                     content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                             schema = @Schema(implementation = ProblemDetail.class))),
-            @ApiResponse(responseCode = "503", description = "Provedor indisponivel, timeout ou falha de rede.",
+            @ApiResponse(responseCode = "503", description = "Provedor indisponivel, timeout, falha de rede "
+                    + "ou todas as sessoes de memoria em uso.",
                     content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                             schema = @Schema(implementation = ProblemDetail.class)))
     })

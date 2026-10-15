@@ -1,6 +1,7 @@
 package br.com.commerceai.api.shared.exception;
 
 import br.com.commerceai.api.chat.service.ChatProviderException;
+import br.com.commerceai.api.chat.memory.ChatMemoryCapacityException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +50,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ProblemDetail handleUnexpected(Exception exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
                 "Ocorreu um erro interno ao processar a requisicao.");
+    }
+
+    @ExceptionHandler(ChatMemoryCapacityException.class)
+    public ProblemDetail handleMemoryCapacity(ChatMemoryCapacityException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
+                "Memoria temporaria ocupada. Tente novamente mais tarde.");
     }
 
     private record FieldError(String field, String message) {

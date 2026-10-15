@@ -2,9 +2,14 @@ package br.com.commerceai.api.chat.service;
 
 import br.com.commerceai.api.chat.dto.ChatRequest;
 import br.com.commerceai.api.chat.dto.ChatResponse;
+import br.com.commerceai.api.chat.memory.TemporaryChatMemory;
 import com.google.genai.errors.ApiException;
 import java.io.IOException;
+import java.util.List;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -22,21 +27,30 @@ public class ChatService {
             """;
 
     private final ChatClient chatClient;
+    private final TemporaryChatMemory temporaryMemory;
 
-    public ChatService(ChatClient.Builder builder) {
+    public ChatService(ChatClient.Builder builder, TemporaryChatMemory temporaryMemory) {
         this.chatClient = builder.defaultSystem(SYSTEM_PROMPT).build();
+        this.temporaryMemory = temporaryMemory;
     }
 
     public ChatResponse chat(ChatRequest request) {
+        return temporaryMemory.withSession(request.sessionId(), memory -> generateResponse(request, memory));
+    }
+
+    private ChatResponse generateResponse(ChatRequest request, ChatMemory memory) {
         String response;
         try {
-            response = chatClient.prompt().user(request.message()).call().content();
+            response = chatClient.prompt()
+                    .messages(memory.get(request.sessionId()))
+                    .user(request.message()).call().content();
         } catch (RuntimeException exception) {
             throw translateProviderFailure(exception);
         }
         if (response == null || response.isBlank()) {
             throw new ChatProviderException(HttpStatus.BAD_GATEWAY);
         }
+        memory.add(request.sessionId(), List.of(new UserMessage(request.message()), new AssistantMessage(response)));
         return new ChatResponse(request.sessionId(), response);
     }
 

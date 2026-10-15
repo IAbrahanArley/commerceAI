@@ -54,6 +54,80 @@
       ]
     },
     {
+      "name": "Memoria temporaria",
+      "description": "Execute os tres passos na ordem. O primeiro gera IDs novos. Confira se a segunda resposta usa o orcamento e o tamanho da primeira mensagem; a terceira nao deve conhecer esses dados. Respostas do modelo variam, por isso os scripts verificam somente o contrato HTTP. Reiniciar a API, expirar a sessao ou atingir a capacidade pode apagar o contexto.",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Contrato do chat', function () {",
+              "  const body = pm.response.json();",
+              "  const request = JSON.parse(pm.variables.replaceIn(pm.request.body.raw));",
+              "  pm.expect(body.sessionId).to.eql(request.sessionId);",
+              "  pm.expect(body.response).to.be.a('string').and.not.empty;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "1 - Informar orcamento e tamanho",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('memorySessionId', pm.variables.replaceIn('{{$guid}}'));",
+                  "pm.collectionVariables.set('memoryOtherSessionId', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{memorySessionId}}\",\n  \"message\": \"Meu orcamento e 300 reais e meu tamanho e 42.\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/chat"
+          },
+          "response": []
+        },
+        {
+          "name": "2 - Consultar contexto na mesma sessao",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{memorySessionId}}\",\n  \"message\": \"Qual foi o orcamento e o tamanho que informei?\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/chat"
+          },
+          "response": []
+        },
+        {
+          "name": "3 - Confirmar isolamento em outra sessao",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{memoryOtherSessionId}}\",\n  \"message\": \"Qual foi o orcamento e o tamanho que informei?\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/chat"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Chat",
       "item": [
         {

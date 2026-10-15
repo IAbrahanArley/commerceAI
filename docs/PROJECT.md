@@ -302,5 +302,8 @@ Essas possibilidades não fazem parte do escopo inicial e dependerão de valida�
 **Estado atual:** Fase 1 concluída, com endpoint de chat, validação, tratamento de erros,
 testes automatizados e chamada real ao Gemini confirmada pelo desenvolvedor via Swagger e Postman.
 
-**Próximo marco:** planejar e implementar memória conversacional temporária, após aprovação do plano.
+**Estado da Fase 2:** memória conversacional temporária implementada, com janela limitada,
+expiração e isolamento por sessão na mesma instância.
+
+**Próximo marco:** validar a continuidade real das conversas e definir a próxima entrega da Fase 2.
 

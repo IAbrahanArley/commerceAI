@@ -1,7 +1,7 @@
 # Commerce AI — Roadmap de Desenvolvimento
 
 **Versão:** 0.1.0\
-**Status:** Fase 1 concluída; Fase 2 em planejamento\
+**Status:** Fase 1 concluída; Fase 2 em andamento\
 **Metodologia:** Desenvolvimento incremental e aprendizado prático\
 **Disponibilidade estimada:** 3 horas por dia, 6 dias por semana
 
@@ -78,7 +78,7 @@ Logs temporários de diagnóstico removidos após a validação.
 
 ### Fase 2 — Conversas e interface web
 
-**Status:** Pendente\
+**Status:** Em andamento; memória temporária implementada\
 **Estimativa:** Semana 2
 
 **Conceitos para estudar:**
@@ -91,13 +91,17 @@ Logs temporários de diagnóstico removidos após a validação.
 
 **Tarefas:**
 
-- [ ] Criar identificação de sessões.
-- [ ] Implementar histórico de mensagens.
-- [ ] Adicionar memória conversacional.
+- [x] Criar identificação de sessões.
+- [x] Implementar histórico de mensagens (janela temporária, sem persistência).
+- [x] Adicionar memória conversacional.
 - [ ] Implementar streaming.
 - [ ] Criar frontend básico de chat.
 - [ ] Implementar tratamento de erros na interface.
-- [ ] Criar testes de continuidade da conversa.
+- [x] Criar testes de continuidade da conversa.
+
+Memória implementada com Spring AI, janela de 20 mensagens, expiração após 30 minutos
+de inatividade e capacidade de 1000 sessões. Falhas não entram no histórico, sessões
+em uso não são removidas e chamadas da mesma sessão são serializadas.
 
 **Critérios de aceite:**
 
@@ -334,12 +338,12 @@ O Codex não deverá marcar tarefas como concluídas sem evidência de implement
 
 ## 6. Próxima atividade
 
-**Fase atual:** Fase 2 — Conversas e interface web (ainda não implementada).
+**Fase atual:** Fase 2 — Conversas e interface web (memória temporária implementada).
 
-**Próximo passo:** apresentar o plano da memória conversacional temporária,
-com limites, expiração e isolamento entre sessões, para aprovação antes de implementar.
+**Próximo passo:** validar a continuidade real pelo Swagger/Postman e escolher a
+próxima entrega da Fase 2 (interface de chat ou streaming) antes de implementar.
 
-Verificação: suíte automatizada com Java 21, 35 testes passando.
+Verificação: suíte automatizada com Java 21, 48 testes passando, incluindo memória temporária.
 Documentação OpenAPI e Swagger UI implementados com contrato em interface `ChatApi`.
 Integração real com Google Gemini confirmada pelo desenvolvedor via Swagger e Postman em 14/10/2026.
 

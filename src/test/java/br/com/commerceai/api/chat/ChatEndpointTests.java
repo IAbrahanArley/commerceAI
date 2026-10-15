@@ -9,6 +9,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.params.provider.CsvSource;
 import com.google.genai.errors.ApiException;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -21,10 +22,14 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
+import org.mockito.ArgumentCaptor;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -151,5 +156,25 @@ class ChatEndpointTests {
         mvc.perform(get("/v3/api-docs/swagger-config"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.url").value("/v3/api-docs"));
+    }
+
+    @Test
+    void continuesConversationThroughHttpWithoutSharingItWithAnotherSession() throws Exception {
+        when(chatModel.call(any(Prompt.class))).thenReturn(new ChatResponse(
+                List.of(new Generation(new AssistantMessage("Orcamento registrado")))));
+        for (var body : List.of(
+                Map.of("sessionId", "memory-first", "message", "Meu orcamento e 300"),
+                Map.of("sessionId", "memory-first", "message", "Qual e o meu orcamento?"),
+                Map.of("sessionId", "memory-second", "message", "Qual e o meu orcamento?"))) {
+            mvc.perform(post("/api/v1/chat").contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(body)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.sessionId").value(body.get("sessionId")));
+        }
+        var captor = ArgumentCaptor.forClass(Prompt.class);
+        verify(chatModel, times(3)).call(captor.capture());
+        assertThat(captor.getAllValues().get(1).getInstructions().stream().skip(1).map(Message::getText).toList())
+                .containsExactly("Meu orcamento e 300", "Orcamento registrado", "Qual e o meu orcamento?");
+        assertThat(captor.getAllValues().get(2).getInstructions()).hasSize(2);
     }
 }

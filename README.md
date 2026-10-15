@@ -64,11 +64,49 @@ Invoke-RestMethod -Method Post -Uri 'http://localhost:8080/api/v1/chat' -Content
 
 `sessionId` e obrigatorio, aceita letras ASCII, numeros, `_` e `-`, e tem limite de 64 caracteres.
 `message` e obrigatoria, nao pode conter apenas espacos e tem limite de 4000 caracteres.
-O identificador e devolvido para correlacao; nao existe memoria ou persistencia de conversas.
+O identificador seleciona a memoria temporaria da conversa e e devolvido na resposta.
+Use o mesmo `sessionId` para continuar a conversa e um ID diferente para iniciar outra.
+
+## Memoria temporaria
+
+O LLM nao guarda as interacoes sozinho: a API envia a janela de mensagens anteriores
+como contexto junto com a nova pergunta. Isso aumenta o consumo de tokens de entrada.
+Usamos `MessageWindowChatMemory` do Spring AI, sem novas dependencias.
+
+- Ate 20 mensagens por sessao (aproximadamente 10 pares pergunta/resposta).
+- Expiracao apos 30 minutos de inatividade, contados da ultima requisicao concluida.
+- Ate 1000 sessoes por instancia; ao atingir esse limite, a sessao ociosa mais antiga e removida.
+- Sessoes em uso ou com chamadas aguardando processamento nao sao removidas.
+- Se todas as sessoes estiverem em uso, uma nova sessao recebe HTTP 503 sem chamar o Gemini.
+- Chamadas simultaneas da mesma sessao sao serializadas; sessoes diferentes podem executar em paralelo.
+- Apenas pares pergunta/resposta validos sao armazenados; falhas e respostas vazias nao alteram o historico.
+
+O prompt de sistema e enviado em toda chamada e nao faz parte das 20 mensagens guardadas.
+Reiniciar a aplicacao apaga a memoria. Ela tambem nao e compartilhada entre instancias.
+O historico completo nao e persistido. Mensagens expiradas sao removidas no proximo acesso
+ou pela limpeza automatica executada a cada minuto, quando a sessao estiver ociosa.
+
+Configuracao opcional por variaveis de ambiente:
+
+| Variavel | Padrao | Regra |
+|---|---|---|
+| `CHAT_MEMORY_MAX_MESSAGES` | `20` | Pelo menos 2 |
+| `CHAT_MEMORY_MAX_SESSIONS` | `1000` | Positivo |
+| `CHAT_MEMORY_TTL` | `30m` | Duracao positiva, por exemplo `5m` |
+
+Teste manual: envie `Meu orcamento e 300 reais e meu tamanho e 42` e depois
+`Qual foi o orcamento e o tamanho que informei?`, mantendo o mesmo `sessionId`.
+Repita a segunda pergunta com outro ID: o contexto da primeira conversa nao sera enviado.
+A collection Postman inclui um grupo com esses tres passos e IDs gerados para cada rodada.
+
+O `sessionId` nao autentica o usuario. Quem usar o mesmo ID acessara o mesmo contexto.
+Use identificadores aleatorios distintos, sem dados pessoais, e mantenha o uso local
+ate implementarmos autenticacao e vinculacao da sessao ao usuario.
 
 Erros usam `application/problem+json`: 400 para JSON ou campos invalidos, 429 para cota
 do provedor, 502 para falha do provedor ou resposta vazia, 503 para indisponibilidade
-ou falha de rede e 500 para erro inesperado. Detalhes internos nao sao devolvidos.
+ou falha de rede e 500 para erro inesperado. Falta de capacidade da memoria tambem retorna 503.
+Detalhes internos nao sao devolvidos.
 As chamadas possuem timeout de 60 segundos e uma tentativa por camada, sem repeticoes automaticas.
 Use `GEMINI_TIMEOUT_MS` para ajustar esse limite em milissegundos; o valor deve ser positivo.
 Se ocorrer `InterruptedIOException: timeout`,
@@ -124,7 +162,7 @@ Isso verifica a integracao de componentes, mas nao comprova autenticacao e respo
 A chamada real ao Gemini 3.5 Flash-Lite e os testes manuais pelo Swagger e Postman
 foram confirmados pelo desenvolvedor em 14/10/2026. A Fase 1 esta concluida.
 Logs temporarios de diagnostico foram removidos, incluindo dados da chave e stack traces diretos.
-A proxima etapa e planejar memoria conversacional temporaria com isolamento entre sessoes.
+A Fase 2 inclui memoria conversacional temporaria implementada; frontend e streaming permanecem pendentes.
 
 Se desejar manter o cache do Maven dentro do projeto:
 
@@ -139,6 +177,8 @@ $env:MAVEN_USER_HOME = "$PWD/.build-cache"
 - Prompt de sistema: instrucoes sobre papel, idioma e limites do assistente, separadas da mensagem do usuario.
 - ChatClient: API do Spring AI que monta o prompt e coordena a comunicacao com o modelo.
 - Tokens: unidades de texto processadas pelo modelo; limitamos a saida a 1024 tokens.
+- Memoria conversacional: janela de interacoes recentes que a API envia ao modelo para manter o contexto.
+- TTL (Time To Live): periodo de inatividade apos o qual a sessao expira; nesta etapa, 30 minutos.
 - Temperatura: parametro de variacao da geracao em modelos que o suportam; nao garante respostas verdadeiras.
   Removemos a temperatura personalizada do YAML. O Spring AI 2.0.1 ainda envia seus
   valores padrao de amostragem, que o Gemini 3.8 Flash ignora atualmente. Revisar a

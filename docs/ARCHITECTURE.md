@@ -73,9 +73,14 @@ src/main/java/br/com/commerceai/api/
 │   │   └── ChatController.java
 │   ├── service/
 │   │   └── ChatService.java
-│   └── dto/
-│       ├── ChatRequest.java
-│       └── ChatResponse.java
+│   ├── dto/
+│   │   ├── ChatRequest.java
+│   │   └── ChatResponse.java
+│   └── memory/
+│       ├── ChatMemoryConfig.java
+│       ├── ChatMemoryProperties.java
+│       ├── TemporaryChatMemory.java
+│       └── ChatMemoryCapacityException.java
 ├── config/
 │   ├── AiConfig.java
 │   └── OpenApiConfig.java
@@ -191,9 +196,34 @@ Response:
 }
 ```
 
-O campo sessionId será inicialmente um identificador de correlação fornecido pelo cliente.
+O campo `sessionId` identifica a memória temporária da conversa nesta instância.
+Não é autenticação nem histórico persistente. O mesmo ID reutiliza a janela de mensagens;
+IDs diferentes mantêm contextos separados. Quem fornecer o mesmo ID compartilhará o contexto.
 
-Não deverá ser interpretado como memória conversacional persistente na primeira versão.
+### Memória temporária implementada
+
+`chat/memory` contém `ChatMemoryProperties`, `ChatMemoryConfig`, `TemporaryChatMemory`
+e a exceção de capacidade. Cada sessão usa `MessageWindowChatMemory` do Spring AI.
+O serviço recupera a janela, envia o prompt de sistema e a nova mensagem e grava o par
+pergunta/resposta somente depois de obter texto válido. Erros não alteram o histórico.
+Não usamos o advisor automático de memória, para controlar essa gravação após validação.
+
+Os padrões aprovados são 20 mensagens, TTL de 30 minutos e 1000 sessões por instância.
+São configuráveis por `CHAT_MEMORY_MAX_MESSAGES`, `CHAT_MEMORY_TTL` e `CHAT_MEMORY_MAX_SESSIONS`.
+O limite se aplica às mensagens de usuário e assistente armazenadas; o prompt de sistema
+é reaplicado em toda chamada. Janela de mensagens não equivale a um limite exato de tokens.
+
+Um relógio injetável permite testar expiração sem esperar tempo real. A limpeza automática
+ocorre a cada minuto; o acesso também remove sessões expiradas. Metadados e seleção de
+evicção são protegidos por uma seção sincronizada curta. A chamada ao modelo ocorre sob
+lock exclusivo da sessão, sem manter o lock global, permitindo paralelismo entre sessões.
+Sessões com chamadas executando ou aguardando ficam protegidas contra expiração e evicção.
+Ao atingir a capacidade, removemos a sessão ociosa com atividade mais antiga. Se todas
+estiverem ocupadas, retornamos HTTP 503 sem chamar o provedor.
+
+A expiração conta da última requisição concluída. Reiniciar a aplicação apaga o estado.
+Não há compartilhamento entre instâncias nem persistência. Antes de uso multiusuário,
+o backend deverá vincular a sessão a uma identidade autenticada; até lá, o uso é local.
 
 ### Validações
 
@@ -522,10 +552,15 @@ Não introduzir:
 com `ChatClient`, prompt de sistema, credenciais por ambiente, timeout,
 tratamento de erros, contrato `ChatApi`, Swagger UI e testes automatizados sem chamadas externas.
 
-**Planejado:** memória conversacional, catálogo, ferramentas, RAG e demais módulos.
+**Implementado na Fase 2:** memória conversacional temporária com janela limitada,
+expiração, capacidade máxima, serialização por sessão e testes sem chamadas externas.
 
-**Validação:** suíte automatizada com Java 21 e 35 testes passando, sem falhas ou erros,
+**Planejado:** frontend, streaming, histórico persistente, catálogo, ferramentas, RAG e demais módulos.
+
+**Validação:** suíte automatizada com Java 21 e 48 testes passando, sem falhas ou erros,
 incluindo geração da especificação OpenAPI e acesso aos recursos do Swagger UI.
+Também inclui continuidade via HTTP, isolamento, expiração, janela limitada,
+concorrência, evicção e resposta 503 quando todas as sessões estão em uso.
 
 **Validação externa:** o desenvolvedor confirmou autenticação, resposta real do
 Gemini 3.5 Flash-Lite e testes pelo Swagger e Postman em 14/10/2026.
